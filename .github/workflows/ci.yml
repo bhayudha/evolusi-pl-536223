@@ -17,7 +17,7 @@ jobs:
       - name: Setup PHP
         uses: shivammathur/setup-php@v2
         with:
-          php-version: '8.2' # Sesuaikan dengan versi PHP Anda
+          php-version: '8.3' # Sesuaikan dengan versi PHP Anda
           extensions: mbstring, xml, ctype, iconv, intl, pdo_sqlite, dom, filter, libxml, tokenizer, session
 
       - name: Install Composer Dependencies
