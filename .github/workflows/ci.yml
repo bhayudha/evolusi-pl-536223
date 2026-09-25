@@ -1,58 +1,72 @@
-name: Laravel CI/CD
+name: Laravel CI/CD Pipeline
 
 on:
   push:
-    branches: [ main, dev ]
+    branches: [ main, dev, "feature/**" ]
   pull_request:
     branches: [ main, dev ]
 
 jobs:
-  # JOB 1: Menjalankan Test bawaan Laravel (PHPUnit/Pest)
-  backend-tests:
+  # Tahap 1: Build
+  build:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
-
       - name: Setup PHP
         uses: shivammathur/setup-php@v2
         with:
-          php-version: '8.4' # Sesuaikan dengan versi PHP Anda
-          extensions: mbstring, xml, ctype, iconv, intl, pdo_sqlite, dom, filter, libxml, tokenizer, session
+          php-version: '8.4'
+      - name: Install Dependencies
+        run: composer install -q --no-ansi --no-interaction --no-scripts --no-progress --prefer-dist
 
-      - name: Install Composer Dependencies
-        run: composer update --no-interaction --no-progress --prefer-dist --no-scripts  
-
+  # Tahap 2: Test
+  test:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+      - name: Install Dependencies
+        run: composer update -q --no-interaction --no-progress --prefer-dist --no-scripts
       - name: Prepare Laravel Environment
-        run: |
-          cp .env.example .env
-          php artisan key:generate
-
-      - name: Create SQLite Database
-        run: |
-          mkdir -p database
-          touch database/database.sqlite
-
+        run: php -r "file_exists('.env') || copy('.env.example', '.env');"
+      - name: Generate Key
+        run: php artisan key:generate
       - name: Run Tests
         env:
           DB_CONNECTION: sqlite
           DB_DATABASE: database/database.sqlite
         run: php artisan test
 
-  # JOB 2: Memastikan aset Frontend bisa di-build dengan Node.js
-  frontend-build:
+  # Tahap 3: Staging
+  staging:
+    needs: test
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout Code
-        uses: actions/checkout@v4
+      - name: Simulate Staging Deployment
+        run: echo "Deploying to Staging Environment..."
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-
-      - name: Install NPM Dependencies
-        run: npm install
-
-      - name: Build Assets
-        run: npm run build
+  # Tahap 4: Production
+  production:
+    needs: staging
+    # Hanya berjalan di branch main
+    if: github.ref == 'refs/heads/main' 
+    runs-on: ubuntu-latest
+    # Memanggil environment 'production' yang sudah disetel Required Reviewer
+    environment: production 
+    steps:
+      - name: Echo Deployment Steps
+        run: |
+          echo "Simulasi Deploy ke Production (deploy.sh):"
+          echo "1. php artisan down"
+          echo "2. git pull origin main"
+          echo "3. composer install --no-interaction --prefer-dist --optimize-autoloader"
+          echo "4. php artisan migrate --force"
+          echo "5. php artisan optimize:clear"
+          echo "6. npm run build"
+          echo "7. php artisan up"
