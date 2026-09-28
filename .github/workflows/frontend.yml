@@ -6,14 +6,13 @@ on:
   pull_request:
     branches: [ main, dev ]
 
-defaults:
-  run:
-    working-directory: ./frontend # Semua job berjalan di folder frontend
-
 jobs:
   # Tahap 1: Lint
   lint:
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./frontend
     steps:
       - uses: actions/checkout@v4
       - name: Setup Node
@@ -29,6 +28,9 @@ jobs:
   test:
     needs: lint
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./frontend
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -43,6 +45,9 @@ jobs:
   build:
     needs: test
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./frontend
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -74,5 +79,3 @@ jobs:
         run: |
           echo "Isi folder dist/ yang dioper dari tahap build:"
           ls -la dist/
-
-          
