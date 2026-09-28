@@ -1,17 +1,23 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 
-const daftarTugas = ref([])
+// 1. Definisikan bentuk data tugas dari Laravel
+interface Tugas {
+  id: number
+  nama_tugas: string
+}
+
+// 2. Berikan tipe data <Tugas[]> pada ref
+const daftarTugas = ref<Tugas[]>([])
 
 onMounted(async () => {
-  // Menggunakan VITE_API_URL, bukan ditulis langsung
   const response = await fetch(`${import.meta.env.VITE_API_URL}/api/tugas`)
   daftarTugas.value = await response.json()
 })
 </script>
 
 <template>
-  <main>
+  <main style="padding: 2rem; font-family: sans-serif;">
     <h1>Daftar Tugas dari Laravel:</h1>
     <ul>
       <li v-for="tugas in daftarTugas" :key="tugas.id">
