@@ -38,4 +38,7 @@ __screenshots__/
 # Vite
 *.timestamp-*-*.mjs
 
+test-results/
+playwright-report/
+
 !.vscode/settings.json
