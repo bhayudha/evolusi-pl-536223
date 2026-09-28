@@ -18,7 +18,7 @@ export default defineConfig({
     },
   },
   test: {
-    environment: 'jsdom',
+    environment: 'node',
     pool: 'vmThreads', 
   },
 })
