@@ -3,6 +3,6 @@ import { formatJudul } from '../../utils/format'
 
 describe('Fungsi Format Judul', () => {
   it('harus mengubah teks menjadi huruf besar semua', () => {
-    expect(formatJudul('belajar vue')).toBe('SALAH')
+    expect(formatJudul('vue')).toBe('VUE')
   })
 })
