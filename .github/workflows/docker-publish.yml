@@ -1,0 +1,34 @@
+name: Publish Docker Image to GHCR
+
+on:
+  push:
+    branches: [ "main", "dev" ] # Pastikan push ke branch ini
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write # Wajib agar Actions bisa mengunggah image
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and Push
+        run: |
+          # GHCR mewajibkan nama repositori huruf kecil semua
+          IMAGE_NAME=$(echo "ghcr.io/${{ github.repository }}" | tr '[:upper:]' '[:lower:]')
+          
+          # Build image menggunakan SHA commit sebagai tag
+          docker build -t $IMAGE_NAME:${{ github.sha }} .
+          
+          # Push image ke registry
+          docker push $IMAGE_NAME:${{ github.sha }}

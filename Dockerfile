@@ -1,36 +1,56 @@
-# Gunakan image PHP dengan CLI (karena kita akan pakai php artisan serve)
-FROM php:8.4-cli
+# ==========================================
+# TAHAP 1: Builder
+# ==========================================
+FROM php:8.4-cli-alpine AS builder
 
-# Install dependensi sistem dasar yang dibutuhkan Laravel dan Composer
-RUN apt-get update && apt-get install -y \
-    git \
-    unzip \
-    libzip-dev \
-    && docker-php-ext-install pdo_mysql zip
+# Install dependensi sistem dasar untuk composer & ekstensi PHP
+RUN apk add --no-cache git unzip zip libzip-dev \
+    && docker-php-ext-install zip pdo_mysql
 
-# Install Composer
-COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
+# Kunci versi Composer
+COPY --from=composer:2.8 /usr/bin/composer /usr/bin/composer
 
-# Set direktori kerja di dalam container
 WORKDIR /app
 
-# SALIN COMPOSER.JSON SEBELUM KODE APLIKASI (Untuk optimasi Cache)
+# Salin file composer terlebih dahulu untuk caching
 COPY composer.json composer.lock ./
+# Install tanpa require-dev untuk mengurangi ukuran
+RUN composer install --no-scripts --no-autoloader --no-dev
 
-# Install dependensi Laravel (Ini akan di-cache selama composer.json tidak berubah)
-RUN composer install --no-scripts --no-autoloader
-
-# Salin seluruh sisa kode aplikasi
+# Salin seluruh kode aplikasi
 COPY . .
 
-# 1. Optimasi autoload composer DULU (agar vendor/autoload.php terbuat)
+# 1. Generate autoloader DULU agar vendor/autoload.php terbuat
 RUN composer dump-autoload --optimize
 
-# 2. BARU jalankan perintah artisan
+# 2. BARU jalankan artisan key:generate
 RUN cp .env.example .env && php artisan key:generate
 
-# Buka port 8000
+# ==========================================
+# TAHAP 2: Runtime (Kecil, aman, dan bersih)
+# ==========================================
+FROM php:8.4-cli-alpine
+
+# Install ekstensi yang wajib saja saat runtime
+RUN apk add --no-cache libzip-dev \
+    && docker-php-ext-install zip pdo_mysql
+
+WORKDIR /app
+
+# Salin HANYA file yang sudah jadi dari tahap builder
+COPY --from=builder /app /app
+
+# Keamanan: Buat user non-root dan berikan hak akses direktori
+RUN addgroup -S laravel && adduser -S laravel -G laravel \
+    && chown -R laravel:laravel /app
+
+# Gunakan user tersebut
+USER laravel
+
 EXPOSE 8000
 
-# Perintah untuk menjalankan server Laravel
+# Healthcheck untuk memantau status container
+HEALTHCHECK --interval=30s --timeout=5s --start-period=5s --retries=3 \
+    CMD wget -qO- http://localhost:8000/ > /dev/null || exit 1
+
 CMD ["php", "artisan", "serve", "--host=0.0.0.0", "--port=8000"]
