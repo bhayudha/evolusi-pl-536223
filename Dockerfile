@@ -42,7 +42,8 @@ COPY --from=builder /app /app
 
 # Keamanan: Buat user non-root dan berikan hak akses direktori
 RUN addgroup -S laravel && adduser -S laravel -G laravel \
-    && chown -R laravel:laravel /app
+    && chown -R laravel:laravel /app \
+    && chmod -R 775 /app/storage /app/bootstrap/cache
 
 # Gunakan user tersebut
 USER laravel
@@ -50,7 +51,7 @@ USER laravel
 EXPOSE 8000
 
 # Healthcheck untuk memantau status container
-HEALTHCHECK --interval=30s --timeout=5s --start-period=5s --retries=3 \
-    CMD wget -qO- http://localhost:8000/ > /dev/null || exit 1
+HEALTHCHECK --interval=10s --timeout=5s --start-period=5s --retries=3 \
+    CMD wget -qO- http://127.0.0.1:8000/api/tugas > /dev/null || exit 1
 
 CMD ["php", "artisan", "serve", "--host=0.0.0.0", "--port=8000"]
